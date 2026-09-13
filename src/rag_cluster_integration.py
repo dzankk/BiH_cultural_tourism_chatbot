@@ -4,7 +4,7 @@ Integration bridge: BiH Heritage DBSCAN spatial clusters -> MLST Cultural Chatbo
 What this does
 ---------------
 1. Loads the chatbot's cleaned heritage dataset (MLSTProject/BiH_Heritage_Final_Clean.csv).
-2. Runs the same DBSCAN spatial clustering used in notebooks/01_spatial_analysis.ipynb
+2. Runs the same DBSCAN spatial clustering used for the app's corridor map
    (micro = tight ~25km corridors, macro = ~45km regional corridors).
 3. Writes cluster_micro / cluster_macro labels back into:
    - a new CSV (MLSTProject/BiH_Heritage_Clustered.csv), for inspection / notebook 2 reuse.
