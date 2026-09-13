@@ -257,7 +257,7 @@ def render_map_page() -> None:
     min_samples = st.sidebar.slider("Minimum sites per corridor", min_value=2, max_value=10, value=4, step=1, help="A corridor needs at least this many sites, or they're marked as isolated.")
 
     try:
-        df = pd.read_csv(PROJECT_ROOT / "data" / "heritage_sites_bih.csv")
+        df = pd.read_csv(PROJECT_ROOT / "MLSTProject" / "BiH_Heritage_Final_Clean.csv")
         df.columns = df.columns.str.strip()
         df = df.sort_values(by="name").reset_index(drop=True)
     except Exception as e:

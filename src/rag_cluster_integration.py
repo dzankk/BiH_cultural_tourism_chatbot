@@ -24,12 +24,10 @@ from pathlib import Path
 import chromadb
 import numpy as np
 import pandas as pd
+from sklearn.cluster import DBSCAN
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(PROJECT_ROOT))
-
-from src.clustering_engine import run_spatial_dbscan  # noqa: E402
-from src.data_processing import get_radial_coordinates  # noqa: E402
 
 MLST_DIR = PROJECT_ROOT / "MLSTProject"
 CLEAN_CSV = MLST_DIR / "BiH_Heritage_Final_Clean.csv"
@@ -37,10 +35,21 @@ CLUSTERED_CSV = MLST_DIR / "BiH_Heritage_Clustered.csv"
 CHROMA_DB_PATH = MLST_DIR / "heritage_db"
 COLLECTION_NAME = "bih_heritage"
 
+EARTH_RADIUS_KM = 6371.009
 EPS_MICRO_KM = 15.0
 MIN_PTS_MICRO = 4
 EPS_MACRO_KM = 45.0
 MIN_PTS_MACRO = 3
+
+
+def get_radial_coordinates(df: pd.DataFrame) -> np.ndarray:
+    return np.radians(df[["latitude", "longitude"]].values)
+
+
+def run_spatial_dbscan(coords_rad: np.ndarray, eps_km: float, min_samples: int) -> DBSCAN:
+    db = DBSCAN(eps=eps_km / EARTH_RADIUS_KM, min_samples=min_samples, metric="haversine")
+    db.fit(coords_rad)
+    return db
 
 
 def normalize_name(name: str) -> str:
