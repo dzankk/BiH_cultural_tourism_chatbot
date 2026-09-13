@@ -26,7 +26,7 @@ sys.path.append(str(PROJECT_ROOT))
 
 from src.chatbot_engine import HeritageChatbotEngine, INTERESTS, SEASONS, generate_llm_reply, get_conversational_reply, get_groq_client, synthesize_recommendation_reply  # noqa: E402
 
-st.set_page_config(page_title="BiH Cultural Companion", layout="wide", page_icon="🇧🇦")
+st.set_page_config(page_title="KulTur", layout="wide", page_icon="🇧🇦")
 
 # CARTO now requires a free API key for raster basemap tiles. Never hardcode
 # it here - set it via a Streamlit secret (.streamlit/secrets.toml, gitignored)
@@ -60,7 +60,7 @@ def get_engine() -> HeritageChatbotEngine:
 
 
 def render_chatbot_page() -> None:
-    st.title("💬 BiH Cultural Chatbot")
+    st.title("💬 KulTur")
     st.caption("Ask about places to visit - the answer is retrieved from the heritage knowledge base and re-ranked by the trained preference model.")
 
     try:
@@ -383,11 +383,11 @@ def render_map_page() -> None:
 # ---------------------------------------------------------------------------
 
 PAGES = {
-    "💬 Cultural Chatbot": render_chatbot_page,
+    "💬 KulTur Chat": render_chatbot_page,
     "🗺️ Heritage Corridor Map": render_map_page,
 }
 
-st.sidebar.title("BiH Cultural Companion")
+st.sidebar.title("KulTur")
 page = st.sidebar.radio("Go to", list(PAGES.keys()), index=0)
 st.sidebar.markdown("---")
 

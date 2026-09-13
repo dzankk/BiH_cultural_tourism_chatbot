@@ -1,5 +1,5 @@
 """
-Chatbot engine for the MLST Cultural Chatbot (BiH heritage sites).
+Chatbot engine for KulTur (BiH heritage sites).
 
 Combines two things the two notebooks already trained:
 1. Semantic retrieval over the Chroma vector store ("bih_heritage") built in
@@ -235,7 +235,7 @@ except ImportError:  # pragma: no cover - groq is an optional dependency
 GROQ_MODEL = "openai/gpt-oss-120b"
 
 _GROQ_SYSTEM_PROMPT = (
-    "You are the conversational voice of 'BiH Cultural Companion', a chatbot that recommends heritage "
+    "You are the conversational voice of 'KulTur', a chatbot that recommends heritage "
     "sites, nature spots, and hidden gems across Bosnia & Herzegovina. The user's message is casual, "
     "meta, or off-topic (not a travel request), so just chat naturally - 1-3 sentences, friendly, and "
     "varied - don't repeat earlier replies in this conversation. If it fits, you can invite them to ask "
@@ -287,7 +287,7 @@ def generate_llm_reply(
 
 
 _RAG_SYSTEM_PROMPT = (
-    "You are the conversational voice of 'BiH Cultural Companion'. A retrieval system has already found "
+    "You are the conversational voice of 'KulTur'. A retrieval system has already found "
     "and ranked real heritage sites from a database for the user's request - they are listed below as "
     "'Retrieved sites'. Write a warm, natural reply (a short paragraph or a light list, 3-6 sentences "
     "total) that presents the top options. Use ONLY the facts given - do not invent sites, regions, or "

@@ -1,4 +1,4 @@
-# BiH Cultural Tourism Chatbot
+# KulTur
 
 An intelligent, location-aware travel concierge for Bosnia & Herzegovina. The chatbot uses **Retrieval-Augmented Generation (RAG)** grounded in a verified cultural heritage database, enhanced by a **Random Forest preference re-ranker** and spatial corridor filtering.
 
