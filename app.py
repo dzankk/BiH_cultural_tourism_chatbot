@@ -215,6 +215,11 @@ def render_chatbot_page() -> None:
                 # the re-ranker even if this message doesn't repeat them.
                 known_interests=st.session_state.get("profile_detected_interests", set()),
             )
+            # engine.ask() can fall back to a single below-threshold result rather
+            # than ever return nothing - but once a real chat message is involved,
+            # the sidebar's confidence slider should be honored strictly, both in
+            # what's shown in "Match details" and what's handed to the LLM.
+            results = [r for r in results if r.score >= min_confidence]
             st.session_state["last_scores"] = [
                 {
                     "Site": r.name,
