@@ -264,6 +264,20 @@ def render_map_page() -> None:
         st.error(f"Error loading CSV data file. Details: {e}")
         st.stop()
 
+    st.sidebar.header("Filters")
+    category_options = sorted(df["category"].dropna().unique()) if "category" in df.columns else []
+    era_options = sorted(df["era_group"].dropna().unique()) if "era_group" in df.columns else []
+    selected_categories = st.sidebar.multiselect("Category", category_options, default=[], help="Leave empty to show every category.")
+    selected_eras = st.sidebar.multiselect("Era", era_options, default=[], help="Leave empty to show every era.")
+    if selected_categories:
+        df = df[df["category"].isin(selected_categories)]
+    if selected_eras:
+        df = df[df["era_group"].isin(selected_eras)]
+    df = df.reset_index(drop=True)
+    if df.empty:
+        st.warning("No sites match the selected filters - try widening your Category/Era selection.")
+        st.stop()
+
     X_deg = df[["latitude", "longitude"]].values
     X_rad = np.radians(X_deg)
     EARTH_RADIUS_KM = 6371.009
