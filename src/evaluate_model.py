@@ -23,7 +23,7 @@ from sklearn.metrics import ConfusionMatrixDisplay, accuracy_score, classificati
 from sklearn.model_selection import train_test_split
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-MLST_DIR = PROJECT_ROOT / "MLSTProject"
+DATA_DIR = PROJECT_ROOT / "data"
 OUT_DIR = PROJECT_ROOT / "evaluation_results"
 OUT_DIR.mkdir(exist_ok=True)
 
@@ -38,12 +38,12 @@ def encode(le, value):
 
 
 def evaluate_rf():
-    brain = joblib.load(MLST_DIR / "heritage_brain_v2.pkl")
+    brain = joblib.load(DATA_DIR / "heritage_brain_v2.pkl")
     model: RandomForestClassifier = brain["model"]
     le_interest, le_season, le_region = brain["le_interest"], brain["le_season"], brain["le_region"]
     le_category, le_period = brain["le_category"], brain["le_period"]
 
-    df = pd.read_csv(MLST_DIR / "simulated_interaction_profiles.csv")
+    df = pd.read_csv(DATA_DIR / "simulated_interaction_profiles.csv")
     rows = [
         {
             "user_interest": encode(le_interest, r["user_interest"]),
@@ -96,7 +96,7 @@ def evaluate_rf():
 
     summary = (
         "=== RandomForestClassifier evaluation ===\n"
-        f"Training data: MLSTProject/simulated_interaction_profiles.csv ({len(df)} rows, "
+        f"Training data: data/simulated_interaction_profiles.csv ({len(df)} rows, "
         f"label balance: {dict(y.value_counts())})\n\n"
         f"[1] Saved production model (heritage_brain_v2.pkl) on FULL dataset "
         f"(NOT a held-out test - optimistic upper bound):\n"
@@ -112,7 +112,7 @@ def evaluate_rf():
 
 
 def evaluate_dbscan():
-    df = pd.read_csv(PROJECT_ROOT / "data" / "heritage_sites_bih.csv")
+    df = pd.read_csv(DATA_DIR / "BiH_Heritage_Final_Clean.csv")
     df.columns = df.columns.str.strip()
     X_rad = np.radians(df[["latitude", "longitude"]].values)
 
@@ -147,7 +147,7 @@ def evaluate_dbscan():
 
     best = max((r for r in rows if r[3] is not None), key=lambda r: r[3])
     summary = (
-        "=== DBSCAN epsilon sensitivity (min_samples=4, data/heritage_sites_bih.csv) ===\n"
+        "=== DBSCAN epsilon sensitivity (min_samples=4, data/BiH_Heritage_Final_Clean.csv) ===\n"
         f"{'Eps(km)':<10}{'Clusters':<10}{'Noise pts':<12}{'Silhouette':<12}\n"
         + "\n".join(f"{e:<10}{c:<10}{n:<12}{('%.4f' % s) if s is not None else 'N/A':<12}" for e, c, n, s in rows)
         + f"\n\nBest silhouette score at eps={best[0]} km ({best[1]} clusters, score={best[3]:.4f}).\n"

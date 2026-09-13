@@ -29,10 +29,10 @@ from sklearn.cluster import DBSCAN
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(PROJECT_ROOT))
 
-MLST_DIR = PROJECT_ROOT / "MLSTProject"
-CLEAN_CSV = MLST_DIR / "BiH_Heritage_Final_Clean.csv"
-CLUSTERED_CSV = MLST_DIR / "BiH_Heritage_Clustered.csv"
-CHROMA_DB_PATH = MLST_DIR / "heritage_db"
+DATA_DIR = PROJECT_ROOT / "data"
+CLEAN_CSV = DATA_DIR / "BiH_Heritage_Final_Clean.csv"
+CLUSTERED_CSV = DATA_DIR / "BiH_Heritage_Clustered.csv"
+CHROMA_DB_PATH = DATA_DIR / "heritage_db"
 COLLECTION_NAME = "bih_heritage"
 
 EARTH_RADIUS_KM = 6371.009

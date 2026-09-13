@@ -30,10 +30,10 @@ import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-MLST_DIR = PROJECT_ROOT / "MLSTProject"
-CHROMA_DB_PATH = MLST_DIR / "heritage_db"
+DATA_DIR = PROJECT_ROOT / "data"
+CHROMA_DB_PATH = DATA_DIR / "heritage_db"
 COLLECTION_NAME = "bih_heritage"
-BRAIN_PATH = MLST_DIR / "heritage_brain_v2.pkl"
+BRAIN_PATH = DATA_DIR / "heritage_brain_v2.pkl"
 
 INTERESTS = ["Any", "History", "Mystery", "Nature", "Quick Stop", "Culture & Urban"]
 SEASONS = ["Any", "Spring", "Summer", "Autumn", "Winter"]
