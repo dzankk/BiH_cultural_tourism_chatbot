@@ -247,6 +247,12 @@ def render_chatbot_page() -> None:
         with st.chat_message("assistant"):
             st.markdown(answer)
 
+        # The sidebar (incl. "Match details") is rendered at the top of this
+        # function, before this turn's results exist - without a rerun it would
+        # keep showing the *previous* turn's table next to this turn's fresh
+        # answer. Rerun so the sidebar reflects the exact same results just used.
+        st.rerun()
+
 
 # ---------------------------------------------------------------------------
 # Page: Spatial Cluster Map (DBSCAN-powered corridor explorer)
