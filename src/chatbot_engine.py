@@ -118,8 +118,8 @@ _DISTANCE_COMPLAINT_WORDS = [
 # road trip, etc.) - bypasses the strict same-corridor location filter.
 _WIDE_RANGE_WORDS = [
     "car", "driving", "drive", "road trip", "willing to travel", "regional",
-    "whole region", "further away", "day trip", "anywhere in", "don't mind traveling",
-    "dont mind traveling",
+    "whole region", "further away", "further trip", "farther trip", "day trip",
+    "anywhere in", "don't mind traveling", "dont mind traveling",
 ]
 
 
@@ -295,11 +295,14 @@ _RAG_SYSTEM_PROMPT = (
     "(km, meters, miles, 'a short walk', 'a few minutes away', etc.) for a site unless that exact distance "
     "figure is explicitly present in the 'Retrieved sites' data below - if no distance is given for a site, "
     "simply don't mention distance for it at all. Never guess or fabricate distances in kilometers if they "
-    "are not explicitly provided in the retrieved context. Weave in why each fits (from the 'why' field), and "
-    "end by inviting a follow-up (e.g. narrowing down, or asking for something different). Always finish your "
-    "reply with a complete sentence - never trail off mid-word or mid-thought. Do not start with a robotic "
-    "phrase like 'Here's what I'd suggest for X:' - just talk naturally, like a knowledgeable local friend "
-    "giving tips."
+    "are not explicitly provided in the retrieved context. If a site lists 'Nearby corridor' sites, and the "
+    "user is open to a wider/further trip (mentions a car, driving, or a further/farther trip), prefer "
+    "recommending from that nearby corridor list over jumping to an unrelated, distant region - the corridor "
+    "sites are geographically close to what the user already asked about. Weave in why each fits (from the "
+    "'why' field), and end by inviting a follow-up (e.g. narrowing down, or asking for something different). "
+    "Always finish your reply with a complete sentence - never trail off mid-word or mid-thought. Do not start "
+    "with a robotic phrase like 'Here's what I'd suggest for X:' - just talk naturally, like a knowledgeable "
+    "local friend giving tips."
 )
 
 
@@ -321,13 +324,16 @@ def _trim_to_last_complete_sentence(text: str) -> str:
     return trimmed or text
 
 
-def _format_results_for_llm(results: list[SiteResult]) -> str:
+def _format_results_for_llm(results: list[SiteResult], nearby_by_site: dict[str, list[str]] | None = None) -> str:
     lines = []
+    nearby_by_site = nearby_by_site or {}
     for i, r in enumerate(results, start=1):
         distance_bit = f", about {r.distance_km:.0f} km away" if r.distance_km is not None else ""
+        nearby = nearby_by_site.get(r.name) or []
+        nearby_bit = f" Nearby corridor: {', '.join(nearby)}." if nearby else ""
         lines.append(
             f"{i}. {r.name} ({r.region}, category: {r.category}){distance_bit}. "
-            f"Description: {r.description} Fun fact: {r.fun_fact} Why recommended: {r.reason}."
+            f"Description: {r.description} Fun fact: {r.fun_fact} Why recommended: {r.reason}.{nearby_bit}"
         )
     return "\n".join(lines)
 
@@ -354,16 +360,23 @@ def synthesize_recommendation_reply(
     query_text: str,
     results: list[SiteResult],
     history: list[dict] | None = None,
+    engine: "HeritageChatbotEngine | None" = None,
 ) -> str:
     """Have Groq write the recommendation reply using only the grounded/retrieved
     site data (RAG-style synthesis) - falls back to the plain template if the
-    LLM is unavailable or the call fails for any reason.
+    LLM is unavailable or the call fails for any reason. If `engine` is given,
+    each site's same-corridor neighbors are looked up and passed along so the
+    LLM can prefer them for "wider/further trip" follow-ups instead of jumping
+    to an unrelated region.
     """
     fallback = format_recommendation_fallback(query_text, results)
     if client is None or not results:
         return fallback
     try:
-        facts_block = _format_results_for_llm(results)
+        nearby_by_site = (
+            {r.name: engine.find_nearby(r.name, scale="micro", top_n=3) for r in results} if engine else None
+        )
+        facts_block = _format_results_for_llm(results, nearby_by_site)
         messages = [
             {"role": "system", "content": _RAG_SYSTEM_PROMPT},
             {"role": "system", "content": f"Retrieved sites (grounded facts, in rank order):\n{facts_block}"},
@@ -690,15 +703,16 @@ class HeritageChatbotEngine:
         # Location filter: if the user mentioned a place (e.g. "Olovo"),
         # restrict candidates to the same micro-corridor - falling back to a
         # tight straight-line radius if that corridor is empty/noise. Mentioning
-        # a car/road trip doesn't drop the location filter entirely - it just
-        # widens the driving radius, so results stay geographically relevant.
+        # a car/road trip doesn't drop the corridor preference entirely - it
+        # just widens the fallback radius, so a "further trip" still prioritizes
+        # the same nearby corridor over a random jump to an unrelated region.
         location_ref = self.find_location_reference(query_text)
         wide_range = self._wants_wide_range(query_text)
         if location_ref:
             paired = list(zip(candidates, distances))
             radius_km = 50.0 if wide_range else 25.0
             same_cluster = []
-            if not wide_range and location_ref["cluster_micro"] != -1:
+            if location_ref["cluster_micro"] != -1:
                 same_cluster = [(m, d) for m, d in paired if m.get("cluster_micro") == location_ref["cluster_micro"]]
             if same_cluster:
                 paired = same_cluster

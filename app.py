@@ -141,28 +141,28 @@ def render_chatbot_page() -> None:
             st.session_state["profile_detected_interests"] |= engine.detect_explicit_interest_statements(user_query)
 
         # Carry the last mentioned place forward across turns (e.g. "i have a
-        # car too" right after asking about Kladanj) - but only when this
-        # message is otherwise ambiguous on its own, so a plain "thanks" or
-        # "bye" never gets hijacked into a new recommendation. Nothing here
-        # is hardcoded - the remembered place comes from the engine's own
-        # earlier location resolution.
+        # car too", "into nature", "i have a bike" right after asking about
+        # Kladanj) - until the user explicitly mentions a *different* place.
+        # Nothing here is hardcoded - the remembered place and the check for a
+        # newly-mentioned place both come from the engine's own location
+        # resolution, never a fixed city list.
         last_reco = st.session_state.get("last_reco_context")
         effective_query = user_query
-        if (
-            not is_shortcut
-            and intent == "unclear"
-            and last_reco
-            and last_reco.get("location") not in (None, "your query")
-        ):
-            combined_query = f"{last_reco['location']} {user_query}"
-            if engine.classify_smalltalk(combined_query) is None:
-                effective_query = combined_query
-                intent = None
-        elif (
-            is_shortcut
-            and last_reco
-            and last_reco.get("location") not in (None, "your query")
-        ):
+        has_anchor = last_reco and last_reco.get("location") not in (None, "your query")
+        mentions_new_location = bool(engine.find_location_reference(user_query))
+        if not is_shortcut and has_anchor and not mentions_new_location:
+            if intent == "unclear":
+                combined_query = f"{last_reco['location']} {user_query}"
+                if engine.classify_smalltalk(combined_query) is None:
+                    effective_query = combined_query
+                    intent = None
+            elif intent is None:
+                # Already recognized as a travel request on its own (e.g. "into
+                # nature" matches an interest keyword) - it just didn't repeat
+                # the place, so keep riding on the current anchor location
+                # instead of losing it and searching the whole country.
+                effective_query = f"{last_reco['location']} {user_query}"
+        elif is_shortcut and has_anchor:
             # "Suggest based on my profile" shouldn't forget a place the user
             # already mentioned in chat - keep it in the same corridor instead
             # of resetting to an unfiltered nationwide search.
@@ -240,7 +240,7 @@ def render_chatbot_page() -> None:
             }
 
             answer = synthesize_recommendation_reply(
-                get_llm_client(), user_query, results, history=st.session_state["chat_history"]
+                get_llm_client(), user_query, results, history=st.session_state["chat_history"], engine=engine
             )
 
         st.session_state["chat_history"].append({"role": "assistant", "content": answer})
