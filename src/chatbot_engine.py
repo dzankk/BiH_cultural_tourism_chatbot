@@ -132,6 +132,30 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * earth_radius_km * math.asin(math.sqrt(a))
 
 
+def _normalize_site_name(name: str) -> str:
+    """Strip parenthetical aliases (e.g. "Travnik Fortress (Stari Grad)" ->
+    "travnik fortress") and punctuation so near-duplicate site names compare equal.
+    """
+    base = re.sub(r"\(.*?\)", "", name).strip().lower()
+    base = re.sub(r"[^a-z0-9\s]", "", base)
+    return re.sub(r"\s+", " ", base).strip()
+
+
+def _is_same_site(name_a: str, name_b: str) -> bool:
+    """True if two site names likely refer to the same physical attraction -
+    exact match, one name being a parenthetical/alias variant of the other, or
+    a very high fuzzy-text similarity (typo/spelling/diacritic variants only -
+    0.92+ to avoid conflating distinct sites that share a naming template, e.g.
+    "Fortress of Soko Grad" vs "Fortress of Novi Grad" (different fortresses,
+    ratio ~0.85) vs "Kravice Waterfall" vs "Kravica Waterfall" (ratio ~0.94)."""
+    na, nb = _normalize_site_name(name_a), _normalize_site_name(name_b)
+    if not na or not nb:
+        return name_a.strip().lower() == name_b.strip().lower()
+    if na == nb or na in nb or nb in na:
+        return True
+    return difflib.SequenceMatcher(None, na, nb).ratio() >= 0.92
+
+
 def _fuzzy_phrase_match(text: str, phrases, cutoff: float = 0.65) -> bool:
     """Typo-tolerant phrase matching: exact substring first, then a light
     per-word fuzzy fallback (e.g. "hpw are you doing" still matches "how are
@@ -373,9 +397,17 @@ def synthesize_recommendation_reply(
     if client is None or not results:
         return fallback
     try:
-        nearby_by_site = (
-            {r.name: engine.find_nearby(r.name, scale="micro", top_n=3) for r in results} if engine else None
-        )
+        # Fuzzy-dedupe: a nearby-corridor entry that's really just another
+        # result under a different name (or an alias of the site itself)
+        # would let the LLM recommend the same physical attraction twice.
+        nearby_by_site = None
+        if engine:
+            nearby_by_site = {}
+            for r in results:
+                candidates = engine.find_nearby(r.name, scale="micro", top_n=5)
+                nearby_by_site[r.name] = [
+                    c for c in candidates if not any(_is_same_site(c, other.name) for other in results)
+                ][:3]
         facts_block = _format_results_for_llm(results, nearby_by_site)
         messages = [
             {"role": "system", "content": _RAG_SYSTEM_PROMPT},
@@ -785,6 +817,15 @@ class HeritageChatbotEngine:
             )
 
         scored.sort(key=lambda r: r.score, reverse=True)
+        # De-duplicate near-identical physical sites (e.g. "Travnik Fortress" vs
+        # "Travnik Fortress (Stari Grad)") before ranking - keeps only the
+        # highest-scoring entry for each attraction so the LLM never sees (and
+        # can't recommend) the same place twice under two different names.
+        deduped: list[SiteResult] = []
+        for r in scored:
+            if not any(_is_same_site(r.name, kept.name) for kept in deduped):
+                deduped.append(r)
+        scored = deduped
         confident = [r for r in scored if r.score >= min_score][:max_results]
         # Never leave the user with nothing - if the bar was set too high, at
         # least surface the single best match instead of an empty answer.
@@ -801,5 +842,5 @@ class HeritageChatbotEngine:
         return [
             m["name"]
             for m in self.metadata_by_name.values()
-            if m.get(field) == target_cluster and m["name"] != site_name
+            if m.get(field) == target_cluster and not _is_same_site(m["name"], site_name)
         ][:top_n]
