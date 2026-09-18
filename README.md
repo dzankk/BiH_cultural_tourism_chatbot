@@ -21,6 +21,14 @@ Many cultural and historical landmarks in Bosnia and Herzegovina remain invisibl
 
 ---
 
+## Application Interface
+
+| Conversational Assistant | Interactive Spatial Map |
+| :---: | :---: |
+| ![KulTur Chat Interface](figures/chat_screenshot.png) | ![KulTur Map View](figures/map_screenshot.png) |
+
+---
+
 ##  Key Features
 
 * **Grounded AI Assistant:** Delivers conversational recommendations strictly constrained to verified facts, distances, and landmarks.
@@ -39,44 +47,25 @@ The project relies on a manually curated and verified dataset of **273 heritage 
 * **Fields:** 22 attributes per entry (Coordinates, 9 Standardized Categories, 6 Historical Eras, Region, Seasonality, Visit Duration, Popularity Score, Keywords).
 * **Open Access:** Available publicly on [Kaggle Datasets](https://www.kaggle.com/datasets/danakopi/bosnia-and-herzegovina-heritage-landmarks-dataset).
 
+### Geographic Distribution & Popularity
+![Geographic Scatter Map of Heritage Sites](figures/geo_scatter.png)
+
 ---
 
 ##  System Architecture
+
+```text
 User Query ──► Intent Routing & Context State
-
-
- │
-
-▼
-
-Stage 1: ChromaDB Vector Search (Top-25 Candidates)
-
 │
-
 ▼
-
+Stage 1: ChromaDB Vector Search (Top-25 Candidates)
+│
+▼
 Stage 2: Random Forest Supervised Re-Ranker
 (Scores Interest, Season, Time, Region)
-
 │
-
 ▼
-
 Stage 3: Fuzzy Deduplication & DBSCAN Spatial Corridor Filter
-
 │
-
 ▼
-
 Stage 4: Grounded LLM Response Generation (Groq API)
-
-
-
-@misc{kopic2026kultur,
-  author = {Kopić, Džana},
-  title = {KulTur: A Chatbot That Recommends Cultural Heritage Sites in Bosnia and Herzegovina},
-  year = {2026},
-  publisher = {GitHub},
-  journal = {GitHub repository},
-  howpublished = {\url{[https://github.com/dzankk/BiH_cultural_tourism_chatbot](https://github.com/dzankk/BiH_cultural_tourism_chatbot)}}
-}
